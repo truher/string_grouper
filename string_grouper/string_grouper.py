@@ -8,7 +8,7 @@ from scipy.sparse import vstack
 from scipy.sparse.csr import csr_matrix
 from scipy.sparse.lil import lil_matrix
 from scipy.sparse.csgraph import connected_components
-from typing import Tuple, NamedTuple, List, Optional, Union
+from typing import Callable, Tuple, NamedTuple, List, Optional, Union
 from sparse_dot_topn_for_blocks import awesome_cossim_topn
 from topn import awesome_hstack_topn
 from functools import wraps
@@ -200,6 +200,10 @@ class StringGrouperConfig(NamedTuple):
     group_rep: str = DEFAULT_GROUP_REP
     force_symmetries: bool = DEFAULT_FORCE_SYMMETRIES
     n_blocks: Tuple[int, int] = DEFAULT_N_BLOCKS
+    analyzer: Union[Callable[[str],List[str]],str] = 'word'
+    preprocessor: Optional[Callable[[str],str]] = None
+    stop_words: Optional[List[str]] = None
+    binary: bool = False
 
 
 def validate_is_fit(f):
@@ -1147,10 +1151,9 @@ class StringGrouper(object):
     def _is_series_of_strings(series_to_test: pd.Series) -> bool:
         if not isinstance(series_to_test, pd.Series):
             return False
-        elif series_to_test.to_frame().applymap(
-                    lambda x: not isinstance(x, str)
-                ).squeeze(axis=1).any():
-            return False
+        for s in series_to_test:
+            if not isinstance(s, str):
+                return False
         return True
 
     @staticmethod
